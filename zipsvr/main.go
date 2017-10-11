@@ -35,11 +35,18 @@ func main() {
 	//get the value of the ADDR environment variable
 	//and use that as the address this server will listen on
 	addr := os.Getenv("ADDR")
-	//if not set, default to ":80", which means listen for
-	//all requests to all hosts on port 80
+	//if not set, default to ":443", which means listen for
+	//all requests to all hosts on port 443
 	if len(addr) == 0 {
-		addr = ":80"
+		addr = ":443"
 	}
+
+	tlskey := os.Getenv("TLSKEY")
+	tlscert := os.Getenv("TLSCERT")
+	if len(tlskey) == 0 || len(tlscert) == 0 {
+		log.Fatal("please set TLSKEY and TLSCERT")
+	}
+
 	//load the zips and report any errors
 	zips, err := models.LoadZips("zips.csv")
 	if err != nil {
@@ -85,6 +92,6 @@ func main() {
 	//see https://drstearns.github.io/tutorials/goweb/#sechandlers
 	mux.Handle(zipsPath, cityHandler)
 
-	fmt.Printf("server is listening at http://%s\n", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	fmt.Printf("server is listening at https://%s\n", addr)
+	log.Fatal(http.ListenAndServeTLS(addr, tlscert, tlskey, mux))
 }
