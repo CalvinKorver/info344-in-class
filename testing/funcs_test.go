@@ -82,8 +82,8 @@ func TestParseSize(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		if output := ParseSize(c.input); output.Height != c.expectedOutput.Height || output.Width != expectedOutput.Width {
-			t.Errorf("%s: got %v but expected %v", c.name, c.output, c.expectedOutput)
+		if output := ParseSize(c.input); output.Height != c.expectedOutput.Height || output.Width != c.expectedOutput.Width {
+			t.Errorf("%s: got %v but expected %v", c.name, output, c.expectedOutput)
 		}
 	}
 
