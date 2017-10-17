@@ -29,7 +29,7 @@ func Reverse(s string) string {
 	//convert string to a slice so we can manipulate it
 	//since strings are immutable, this creates a copy of
 	//the string so we won't be modifying the original
-	chars := []byte(s)
+	chars := []rune(s)
 
 	//starting from each end, swap the values in the slice
 	//elements, stopping when we get to the middle
