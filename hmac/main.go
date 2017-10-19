@@ -1,9 +1,14 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 //usage is a helpful usage string shown when
@@ -43,7 +48,12 @@ func sign(signingKey string, stream io.Reader) (string, error) {
 	//https://golang.org/pkg/crypto/hmac/
 	//https://golang.org/pkg/io/#Copy
 	//https://golang.org/pkg/encoding/base64/
-	return "", fmt.Errorf("TODO")
+	h := hmac.New(sha256.New, []byte(signingKey))
+	if _, err := io.Copy(h, stream); err != nil {
+		return "", fmt.Errorf("error copying bytes: %v", err)
+	}
+	sig := h.Sum(nil)
+	return base64.StdEncoding.EncodeToString(sig), nil
 }
 
 //verify returns true if the base64-encoded HMAC `signature`
@@ -54,7 +64,17 @@ func verify(signingKey string, signature string, stream io.Reader) (bool, error)
 	//TODO: implement this function according to the comments
 	//HINTS: (same as above plus the following)
 	//https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare
-	return false, fmt.Errorf("TODO")
+	sig, err := base64.StdEncoding.DecodeString(signature) // Decode back to a slice of bytes
+	if err != nil {
+		return false, fmt.Errorf("error base64 decoding %v", err)
+	}
+	h := hmac.New(sha256.New, []byte(signingKey))
+	if _, err := io.Copy(h, stream); err != nil {
+		return false, fmt.Errorf("error copying bytes: %v", err)
+	}
+	hashed := h.Sum(nil)
+	return subtle.ConstantTimeCompare(sig, hashed) == 1, err
+
 }
 
 func main() {
@@ -62,6 +82,35 @@ func main() {
 		showUsage()
 	}
 
+	cmd := strings.ToLower(os.Args[1])
+	signingKey := os.Args[2]
+
+	switch cmd {
+	case "sign":
+		sig, err := sign(signingKey, os.Stdin)
+		if err != nil {
+			fmt.Printf("Error signing: %v", err)
+			os.Exit(exitCodeProcessing)
+		}
+		fmt.Println(sig)
+	case "verify":
+		sig64 := os.Args[3]
+		if len(sig64) == 0 {
+			showUsage()
+		}
+		valid, err := verify(signingKey, sig64, os.Stdin)
+		if err != nil {
+			fmt.Printf("error validating %v", err)
+			os.Exit(exitCodeProcessing)
+		}
+		if valid {
+			fmt.Println("Sig valid")
+		} else {
+			fmt.Println("Not valid")
+		}
+	default:
+		showUsage()
+	}
 	//TODO: use the os.Args slice
 	//to get the command and signing key
 	//then switch on the command
