@@ -1,7 +1,12 @@
 package handlers
 
 import (
+	"path"
+	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/calvinkorver/info344-in-class/tasksvr/models/tasks"
 )
 
 //TasksHandler handles requests for the /v1/tasks resource
@@ -10,7 +15,27 @@ func (ctx *Context) TasksHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		//TODO: parse the `completed` query string param as a boolean
 		//and call the GetAll() method on the tasks.Store to get the tasks
+		tasks, err := ctx.tasksStore.GetAll(false)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error getting tasks: %v", err), http.StatusInternalServerError)
+
+		}
+		respond(w, tasks)
 	case "POST":
+		nt := &tasks.NewTask{}
+		if err := json.NewDecoder(r.Body).Decode(nt); err != nil {
+			http.Error(w, fmt.Sprintf("error decoding JSON: %v", err),
+				http.StatusBadRequest)
+			return
+		}
+
+		task, err := ctx.tasksStore.Insert(nt)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error inserting task: %v", err),
+				http.StatusInternalServerError)
+			return
+		}
+		respond(w, task)
 		//TODO: decode the request body into a tasks.NewTask
 		//and insert it using the tasks.Store
 	default:
@@ -22,10 +47,24 @@ func (ctx *Context) TasksHandler(w http.ResponseWriter, r *http.Request) {
 //SpecificTaskHandler handles requests for the /v1/tasks/...task-id... resource
 func (ctx *Context) SpecificTaskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	id := path.Base(r.URL.Path)
 	case "PATCH":
 		//TODO: decode the request body into a
 		//tasks.TaskUpdates struct and pass that
 		//to the Update() method on the tasks.Store
+		tu := &tasks.TaskUpdates{}
+		if err := json.NewDecoder(r.Body).Decode(tu); err != nil {
+			http.Error(w, fmt.Sprintf("error decoding JSON: %v", err),
+				http.StatusBadRequest)
+			return
+		}
+		ctx.tasksStore.Update(oid, tu)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error updating task: %v", err),
+			http.StatusInternalServerError)
+			return
+		}
+		respond(w,task)
 	default:
 		http.Error(w, "method must be PATCH", http.StatusMethodNotAllowed)
 		return

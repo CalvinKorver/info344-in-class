@@ -13,10 +13,10 @@ import (
 
 //SQL to insert a new task row
 //use `?` for column values that we will get at runtime
-const sqlInsertTask = ``
+const sqlInsertTask = `insert into tasks(id, title, completed, createdAt, modifiedAt) values (?,?,?,?);`
 
 //SQL to insert a tag for a task
-const sqlInsertTag = ``
+const sqlInsertTag = `insert into tags(taskID, tag) values (?,?);`
 
 //SQL to select all tasks/tags with a particular task.completed value
 //join tasks to tags so we get everything with only one query
@@ -58,7 +58,21 @@ func NewMySQLStore(db *sql.DB) *MySQLStore {
 
 //Insert inserts a new task into the database
 func (s *MySQLStore) Insert(nt *NewTask) (*Task, error) {
-	panic("TODO:")
+	task, err := nt.ToTask()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := d.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(sqlInsertTask, task.ID, task.Title, task.Completed, task.CreatedAt);
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	for _, tag := range task.Tags {
+	}
 }
 
 //GetAll gets all tasks with a particular completed state
