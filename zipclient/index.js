@@ -11,8 +11,6 @@ $( document ).ready(function() {
                 myFunction(response, stateName);
               }
         });
-
-        
     });
     
     function myFunction(response, stateName) {
